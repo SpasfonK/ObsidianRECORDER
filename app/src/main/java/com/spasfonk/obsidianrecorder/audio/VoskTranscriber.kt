@@ -38,15 +38,25 @@ class VoskTranscriber(private val context: Context) {
             try {
                 val latch = java.util.concurrent.CountDownLatch(1)
                 var unpackedModel: Model? = null
-                var unpackError: Exception? = null
+                var unpackError: IOException? = null
 
                 StorageService.unpack(context, modelPath, "models",
-                    { mdl: Model -> unpackedModel = mdl },
-                    { latch.countDown() }
+                    { mdl: Model ->
+                        unpackedModel = mdl
+                        latch.countDown()
+                    },
+                    { err: IOException ->
+                        unpackError = err
+                        latch.countDown()
+                    }
                 )
 
-                latch.await(30, java.util.concurrent.TimeUnit.SECONDS)
-                val m = unpackedModel ?: throw IOException("Délai d'extraction du modèle dépassé")
+                val completed = latch.await(30, java.util.concurrent.TimeUnit.SECONDS)
+                if (!completed) {
+                    throw IOException("Délai d'extraction du modèle dépassé (30s)")
+                }
+                unpackError?.let { throw it }
+                val m = unpackedModel ?: throw IOException("Modèle Vosk introuvable dans assets/$modelPath")
 
                 model = m
                 val rec = Recognizer(m, 44100.0f)
