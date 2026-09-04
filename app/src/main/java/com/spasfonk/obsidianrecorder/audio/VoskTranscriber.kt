@@ -37,9 +37,9 @@ class VoskTranscriber(private val context: Context) {
         recognizerThread = Thread {
             try {
                 val fullModelDir = StorageService.unpack(context, modelPath, "models",
-                    object : StorageService.ProgressListener {
-                        override fun onProgress(current: Long, max: Long) {}
-                        override fun onDone() {}
+                    object : StorageService.Callback<Model> {
+                        override fun onComplete(result: Model) {}
+                        override fun onError(e: Exception) {}
                     })
                 model = Model(fullModelDir.absolutePath)
                 val rec = Recognizer(model, 44100.0f)
