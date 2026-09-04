@@ -1,0 +1,5 @@
+-keep class com.spasfonk.obsidianrecorder.** { *; }
+-keep class org.vosk.** { *; }
+-keep class com.sun.jna.** { *; }
+-dontwarn org.vosk.**
+-dontwarn com.sun.jna.**
