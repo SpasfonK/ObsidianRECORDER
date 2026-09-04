@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.concurrent.thread
 import kotlin.math.log10
 import kotlin.math.sqrt
@@ -112,7 +113,7 @@ class AudioRecordEngine(
     }
 
     private val pcmStagingBytes = ByteArray(chunkBytes)
-    private val pcmStagingBuffer: ByteBuffer = ByteBuffer.wrap(pcmStagingBytes)
+    private val pcmStagingBuffer: ByteBuffer = ByteBuffer.wrap(pcmStagingBytes).order(ByteOrder.LITTLE_ENDIAN)
 
     private val feedPoolSize = 16
     private val feedPool: Array<ByteArray> = Array(feedPoolSize) { ByteArray(chunkBytes) }
@@ -378,6 +379,7 @@ class AudioRecordEngine(
         val slot = feedPool[feedWriteIdx]
         val byteLen = length * 2
         val bb = ByteBuffer.wrap(slot)
+        bb.order(ByteOrder.LITTLE_ENDIAN)
         bb.clear()
         for (i in 0 until length) bb.putShort(shorts[i])
         feedLengths[feedWriteIdx] = byteLen
