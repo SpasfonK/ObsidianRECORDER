@@ -17,7 +17,18 @@
 - Dépôt : https://github.com/SpasfonK/ObsidianRECORDER
 - Workflow : Android CI Build (déclenché sur push main, PR, et workflow_dispatch)
 - Dernier run : https://github.com/SpasfonK/ObsidianRECORDER/actions
-- Correction en cours : adaptation API StorageService.unpack de vosk-android
+- ✅ **Le build CI compile** assembleDebug + assembleRelease (tous les steps verts sur `main`)
+
+## Corrections appliquées récemment
+
+### 1. Signature StorageService.unpack — corrigée (commits `af71627` → `cd718c4`)
+L'API réelle de vosk-android est `void unpack(Context, String sourcePath, String targetPath, Callback<Model>, Callback<IOException>)`. Les 7 essais-erreurs précédents ont été nécessaires pour stabiliser l'appel Kotlin avec les types SAM explicites.
+
+### 2. Latch non relâché dans VoskTranscriber — corrigé (commit `4c3b21f`)
+Le `CountDownLatch` n'était `countDown()` que dans le callback d'erreur et jamais dans le callback de succès, provoquant une attente systématique de 30s avant chaque démarrage de transcription. Corrigé : appel de `latch.countDown()` dans les deux callbacks.
+
+### 3. Endianness PCM → AAC — corrigé (commit `1376fc2`)
+Les buffers `ByteBuffer.wrap()` pour la conversion Short → bytes vers l'encodeur AAC utilisaient `BIG_ENDIAN` par défaut, mais `MediaCodec` attend du `LITTLE_ENDIAN` — chaque échantillon 16-bit avait ses deux octets inversés, produisant un grésillement/statique très fort à la lecture. Corrigé : ajout de `.order(ByteOrder.LITTLE_ENDIAN)` sur les deux buffers concernés (`pcmStagingBuffer` et le buffer dans `enqueueToFeedPool`).
 
 ## Étape manuelle obligatoire avant déploiement
 - [ ] Télécharger un modèle Vosk français (ex. vosk-model-small-fr-0.22, ~40 Mo) depuis https://alphacephei.com/vosk/models
@@ -28,5 +39,6 @@
 - **Onglet Applications** : remplacé par le système de catégories
 - **Découpe SAF** : openFileDescriptor reste ouvert jusqu'au release() du muxer ; usage normal OK mais usage intensif nécessiterait fermeture explicite du PFD
 - **Vosk** : qualité de transcription dépend du modèle choisi (small = rapide mais moins précis)
-- **StorageService.unpack** : API asynchrone avec callbacks Model/onDone, stabilisation du code en cours via CI
+- **ByteBuffer sur Android** : `ByteBuffer.wrap()` et `ByteBuffer.allocate()` utilisent `BIG_ENDIAN` par défaut, mais le PCM natif Android et `MediaCodec` AAC sont en `LITTLE_ENDIAN` — toujours appeler `.order(ByteOrder.LITTLE_ENDIAN)` explicitement sur tout buffer PCM
+- **Lambdas SAM Java/Kotlin** : ne pas omettre les types explicites des paramètres avec `Callback<R>` de vosk-android, sous peine d'erreurs "No value passed for parameter" trompeuses
 - **Aucun modèle Vosk dans le dépôt** : le build compile mais la transcription affiche une erreur explicite au runtime
