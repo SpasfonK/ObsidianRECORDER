@@ -36,9 +36,20 @@ class VoskTranscriber(private val context: Context) {
 
         recognizerThread = Thread {
             try {
-                val fullModelDir = StorageService.unpack(context, modelPath, "models", { _: Model -> }, {})
-                model = Model(fullModelDir.absolutePath)
-                val rec = Recognizer(model, 44100.0f)
+                val latch = java.util.concurrent.CountDownLatch(1)
+                var unpackedModel: Model? = null
+                var unpackError: Exception? = null
+
+                StorageService.unpack(context, modelPath, "models",
+                    { mdl: Model -> unpackedModel = mdl },
+                    { latch.countDown() }
+                )
+
+                latch.await(30, java.util.concurrent.TimeUnit.SECONDS)
+                val m = unpackedModel ?: throw IOException("Délai d'extraction du modèle dépassé")
+
+                model = m
+                val rec = Recognizer(m, 44100.0f)
                 rec.setWords(true)
                 rec.setPartialWords(true)
                 recognizer = rec
