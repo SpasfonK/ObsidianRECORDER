@@ -36,10 +36,7 @@ class VoskTranscriber(private val context: Context) {
 
         recognizerThread = Thread {
             try {
-                val fullModelDir = StorageService.unpack(context, modelPath, "models",
-                    object : StorageService.Callback<Model> {
-                        override fun onComplete(result: Model) {}
-                    })
+                val fullModelDir = StorageService.unpack(context, modelPath, "models") { _: Model -> }
                 model = Model(fullModelDir.absolutePath)
                 val rec = Recognizer(model, 44100.0f)
                 rec.setWords(true)
