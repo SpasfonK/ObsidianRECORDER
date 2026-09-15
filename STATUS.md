@@ -37,10 +37,8 @@ Les buffers `ByteBuffer.wrap()` pour la conversion Short → bytes vers l'encode
 - le message d'erreur runtime affiche désormais la cause réelle de l'`IOException` au lieu du texte générique trompeur.
 
 ## Étape manuelle obligatoire avant déploiement
-- [ ] Télécharger un modèle Vosk français (ex. vosk-model-small-fr-0.22, ~40 Mo) depuis https://alphacephei.com/vosk/models
-- [ ] Dézipper et placer le dossier dans `app/src/main/assets/vosk-model-small-fr-0.22/`
-- [x] Le fichier `uuid` requis par `StorageService.unpack()` est désormais généré automatiquement au build (tâche Gradle `generateVoskUuid`)
-- [ ] Si l'APK est construit par la CI GitHub, **committer le dossier du modèle** : `app/src/main/assets/` n'est pas suivi par git, donc un build CI ne contient aucun modèle
+- [x] Modèle Vosk français (vosk-model-small-fr-0.22) présent et **committé** dans `app/src/main/assets/vosk-model-small-fr-0.22/` — inclus dans les builds CI et locaux
+- [x] Le fichier `uuid` requis par `StorageService.unpack()` est committé directement dans le modèle **et** régénéré automatiquement au build si absent (tâche Gradle `generateVoskUuid`)
 
 ## Contraintes & Pièges identifiés
 - **Onglet Appels** : supprimé — l'enregistrement fiable des appels par une app tierce n'est pas praticable sur Android
@@ -49,4 +47,4 @@ Les buffers `ByteBuffer.wrap()` pour la conversion Short → bytes vers l'encode
 - **Vosk** : qualité de transcription dépend du modèle choisi (small = rapide mais moins précis)
 - **ByteBuffer sur Android** : `ByteBuffer.wrap()` et `ByteBuffer.allocate()` utilisent `BIG_ENDIAN` par défaut, mais le PCM natif Android et `MediaCodec` AAC sont en `LITTLE_ENDIAN` — toujours appeler `.order(ByteOrder.LITTLE_ENDIAN)` explicitement sur tout buffer PCM
 - **Lambdas SAM Java/Kotlin** : ne pas omettre les types explicites des paramètres avec `Callback<R>` de vosk-android, sous peine d'erreurs "No value passed for parameter" trompeuses
-- **Aucun modèle Vosk dans le dépôt** : le build compile mais la transcription affiche une erreur explicite au runtime
+- **Sample rate Vosk** : le modèle fr utilise `--sample-frequency=16000` avec `--allow-downsample=true` dans `conf/mfcc.conf` — `Recognizer(model, 44100.0f)` fonctionne car Kaldi downsample lui-même, pas besoin de réenregistrer à 16kHz
