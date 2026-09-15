@@ -44,6 +44,27 @@ android {
     }
 }
 
+// Vosk's StorageService.unpack() reads assets/<model>/uuid to detect model
+// changes, and throws FileNotFoundException when it is missing. The official
+// vosk-android model module generates this file automatically; we do the same
+// here so a locally placed model folder never fails to load.
+val generateVoskUuid by tasks.registering {
+    val modelDir = layout.projectDirectory.dir("src/main/assets/vosk-model-small-fr-0.22")
+    doLast {
+        val dir = modelDir.asFile
+        if (dir.isDirectory) {
+            val uuidFile = dir.resolve("uuid")
+            if (!uuidFile.exists()) {
+                uuidFile.writeText("vosk-model-small-fr-0.22")
+            }
+        }
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn(generateVoskUuid)
+}
+
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")

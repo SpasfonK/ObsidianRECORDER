@@ -30,9 +30,17 @@ Le `CountDownLatch` n'était `countDown()` que dans le callback d'erreur et jama
 ### 3. Endianness PCM → AAC — corrigé (commit `1376fc2`)
 Les buffers `ByteBuffer.wrap()` pour la conversion Short → bytes vers l'encodeur AAC utilisaient `BIG_ENDIAN` par défaut, mais `MediaCodec` attend du `LITTLE_ENDIAN` — chaque échantillon 16-bit avait ses deux octets inversés, produisant un grésillement/statique très fort à la lecture. Corrigé : ajout de `.order(ByteOrder.LITTLE_ENDIAN)` sur les deux buffers concernés (`pcmStagingBuffer` et le buffer dans `enqueueToFeedPool`).
 
+### 4. Fichier `uuid` manquant dans le modèle Vosk — corrigé
+`StorageService.unpack()` (vosk-android) lit obligatoirement `assets/<modèle>/uuid` pour détecter les mises à jour du modèle. Le modèle téléchargé sur alphacephei.com ne contient **pas** ce fichier : son absence provoque une `FileNotFoundException` avalée par le `catch (IOException)`, qui affichait à tort « Modèle Vosk introuvable dans assets/... » alors que le modèle était bien présent. Corrigé par :
+- création de `app/src/main/assets/vosk-model-small-fr-0.22/uuid` ;
+- une tâche Gradle `generateVoskUuid` (racine du module `app`) qui recrée ce fichier automatiquement au build s'il est absent — même approche que le module `:models` officiel de vosk-android ;
+- le message d'erreur runtime affiche désormais la cause réelle de l'`IOException` au lieu du texte générique trompeur.
+
 ## Étape manuelle obligatoire avant déploiement
 - [ ] Télécharger un modèle Vosk français (ex. vosk-model-small-fr-0.22, ~40 Mo) depuis https://alphacephei.com/vosk/models
 - [ ] Dézipper et placer le dossier dans `app/src/main/assets/vosk-model-small-fr-0.22/`
+- [x] Le fichier `uuid` requis par `StorageService.unpack()` est désormais généré automatiquement au build (tâche Gradle `generateVoskUuid`)
+- [ ] Si l'APK est construit par la CI GitHub, **committer le dossier du modèle** : `app/src/main/assets/` n'est pas suivi par git, donc un build CI ne contient aucun modèle
 
 ## Contraintes & Pièges identifiés
 - **Onglet Appels** : supprimé — l'enregistrement fiable des appels par une app tierce n'est pas praticable sur Android

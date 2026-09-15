@@ -67,9 +67,11 @@ class VoskTranscriber(private val context: Context) {
                 _state.value = _state.value.copy(isListening = true, lastError = null)
             } catch (e: IOException) {
                 _state.value = _state.value.copy(
-                    lastError = "Modèle Vosk introuvable dans assets/$modelPath. " +
-                        "Téléchargez un modèle français sur alphacephei.com/vosk/models " +
-                        "et placez-le dans app/src/main/assets/$modelPath/"
+                    lastError = "Échec du chargement du modèle Vosk ($modelPath) : " +
+                        "${e.message ?: e.javaClass.simpleName}. " +
+                        "Vérifiez que le dossier complet du modèle est dans " +
+                        "app/src/main/assets/$modelPath/ et qu'il contient un fichier 'uuid'. " +
+                        "Modèle téléchargeable sur alphacephei.com/vosk/models"
                 )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
